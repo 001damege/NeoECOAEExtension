@@ -1,5 +1,6 @@
 package cn.dancingsnow.neoecoae.blocks.entity.crafting;
 
+import cn.dancingsnow.neoecoae.blocks.crafting.ECOFluidOutputHatchBlock;
 import com.lowdragmc.lowdraglib.gui.modular.IUIHolder;
 import com.lowdragmc.lowdraglib.gui.modular.ModularUI;
 import com.lowdragmc.lowdraglib.gui.texture.ResourceBorderTexture;
@@ -8,11 +9,14 @@ import com.lowdragmc.lowdraglib.gui.widget.TankWidget;
 import com.lowdragmc.lowdraglib.gui.widget.TextTextureWidget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 import com.lowdragmc.lowdraglib.gui.widget.custom.PlayerInventoryWidget;
+import com.lowdragmc.lowdraglib.side.fluid.FluidTransferHelper;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
@@ -32,6 +36,11 @@ public class ECOFluidInputHatchBlockEntity extends AbstractCraftingBlockEntity<E
         super(type, pos, blockState);
     }
 
+    public void tick(Level level, BlockPos pos, BlockState state) {
+        Direction face = state.getValue(ECOFluidOutputHatchBlock.FACING);
+        FluidTransferHelper.importToTarget(tank, tank.getCapacity(), f -> true, level, pos.relative(face), face.getOpposite());
+    }
+
     private WidgetGroup createUI() {
         WidgetGroup root = new WidgetGroup();
 
@@ -45,10 +54,8 @@ public class ECOFluidInputHatchBlockEntity extends AbstractCraftingBlockEntity<E
         text.setSize(160, 9);
         root.addWidget(text);
 
-        TankWidget tankWidget = new TankWidget();
-        tankWidget.setSelfPosition(81, 28);
+        TankWidget tankWidget = new TankWidget(tank, 0, 81, 28,true, true);
         tankWidget.initTemplate();
-        tankWidget.setFluidTank(tank);
         root.addWidget(tankWidget);
 
         PlayerInventoryWidget playerInventoryWidget = new PlayerInventoryWidget();

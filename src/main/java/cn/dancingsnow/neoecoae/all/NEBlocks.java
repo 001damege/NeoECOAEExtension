@@ -2,12 +2,15 @@ package cn.dancingsnow.neoecoae.all;
 
 import cn.dancingsnow.neoecoae.blocks.MachineCasing;
 import cn.dancingsnow.neoecoae.blocks.MachineInterface;
+import cn.dancingsnow.neoecoae.blocks.computation.ECOComputationParallelCore;
+import cn.dancingsnow.neoecoae.blocks.computation.ECOComputationTransmitter;
 import cn.dancingsnow.neoecoae.blocks.crafting.ECOCraftingParallelCore;
 import cn.dancingsnow.neoecoae.blocks.crafting.ECOCraftingPatternBus;
 import cn.dancingsnow.neoecoae.blocks.crafting.ECOCraftingSystem;
 import cn.dancingsnow.neoecoae.blocks.crafting.ECOCraftingVent;
 import cn.dancingsnow.neoecoae.blocks.crafting.ECOCraftingWorker;
 import cn.dancingsnow.neoecoae.blocks.crafting.ECOFluidInputHatchBlock;
+import cn.dancingsnow.neoecoae.blocks.crafting.ECOFluidOutputHatchBlock;
 import cn.dancingsnow.neoecoae.blocks.storage.ECODriveBlock;
 import cn.dancingsnow.neoecoae.blocks.storage.ECOStorageSystem;
 import cn.dancingsnow.neoecoae.blocks.storage.ECOStorageVent;
@@ -221,6 +224,44 @@ public class NEBlocks {
         .tag(BlockTags.MINEABLE_WITH_PICKAXE, BlockTags.NEEDS_STONE_TOOL)
         .simpleItem()
         .register();
+
+    public static final BlockEntry<ECOComputationTransmitter> COMPUTATION_TRANSMITTER = REGISTRATE
+        .block("computation_transmitter", ECOComputationTransmitter::new)
+        .initialProperties(() -> Blocks.IRON_BLOCK)
+        .tag(BlockTags.MINEABLE_WITH_PICKAXE, BlockTags.NEEDS_STONE_TOOL)
+        .simpleItem()
+        .blockstate((ctx, prov) -> {
+            prov.getVariantBuilder(ctx.get())
+                .forAllStates(s -> {
+                    ModelFile modelFile;
+                    if (s.getValue(ECOComputationTransmitter.FORMED)) {
+                        modelFile = prov.models().getExistingFile(prov.modLoc("block/" + ctx.getName() + "_formed"));
+                    } else {
+                        modelFile = prov.models().getExistingFile(prov.modLoc("block/" + ctx.getName()));
+                    }
+                    return ConfiguredModel.builder()
+                        .rotationY(((int) s.getValue(BlockStateProperties.HORIZONTAL_FACING).toYRot() + 180) % 360)
+                        .modelFile(modelFile)
+                        .build();
+                });
+        })
+        .lang("ECO - CI Superconductive Transmitting Bus")
+        .register();
+
+    public static final BlockEntry<ECOComputationParallelCore> COMPUTATION_PARALLEL_CORE_L4 = createComputationParallelCore(
+        "l4",
+        Rarity.UNCOMMON
+    );
+
+    public static final BlockEntry<ECOComputationParallelCore> COMPUTATION_PARALLEL_CORE_L6 = createComputationParallelCore(
+        "l6",
+        Rarity.RARE
+    );
+
+    public static final BlockEntry<ECOComputationParallelCore> COMPUTATION_PARALLEL_CORE_L9 = createComputationParallelCore(
+        "l9",
+        Rarity.EPIC
+    );
     //endregion
 
     static {
@@ -231,7 +272,6 @@ public class NEBlocks {
     // ************************************* //
 
     //region Crafting System
-
     public static final BlockEntry<ECOCraftingSystem> CRAFTING_SYSTEM_L4 = createCraftingSystem("l4", Rarity.UNCOMMON);
     public static final BlockEntry<ECOCraftingSystem> CRAFTING_SYSTEM_L6 = createCraftingSystem("l6", Rarity.RARE);
     public static final BlockEntry<ECOCraftingSystem> CRAFTING_SYSTEM_L9 = createCraftingSystem("l9", Rarity.EPIC);
@@ -253,71 +293,18 @@ public class NEBlocks {
         .simpleItem()
         .register();
 
-    public static final BlockEntry<ECOFluidInputHatchBlock> INPUT_HATCH = REGISTRATE
-        .block("input_hatch", ECOFluidInputHatchBlock::new)
-        .initialProperties(() -> Blocks.IRON_BLOCK)
-        .tag(BlockTags.MINEABLE_WITH_PICKAXE, BlockTags.NEEDS_STONE_TOOL)
-        .blockstate((ctx, prov) -> {
-            ResourceLocation casing = prov.modLoc("block/crafting_casing");
-            ResourceLocation hatch = prov.modLoc("block/input_hatch");
-            ResourceLocation model = prov.models().cube(
-                ctx.getName(),
-                casing,
-                casing,
-                hatch,
-                casing,
-                casing,
-                casing
-            ).texture("particle", casing).getLocation();
-            prov.getVariantBuilder(ctx.get()).forAllStatesExcept(state -> {
-                Direction dir = state.getValue(ECOFluidInputHatchBlock.FACING);
-                return ConfiguredModel.builder()
-                    .modelFile(prov.models().getExistingFile(model))
-                    .rotationX(dir == Direction.DOWN ? 90 : dir.getAxis().isHorizontal() ? 0 : -90)
-                    .rotationY(dir.getAxis().isVertical() ? 0 : (((int) dir.toYRot()) + 180) % 360)
-                    .build();
-            }, ECOFluidInputHatchBlock.FORMED);
-        })
-        .simpleItem()
-        .lang("ECO Fluid Input Hatch")
-        .register();
-
-    public static final BlockEntry<MachineCasing<NECraftingCluster>> CRAFTING_CASING = REGISTRATE
-        .block("crafting_casing", MachineCasing<NECraftingCluster>::new)
-        .initialProperties(() -> Blocks.IRON_BLOCK)
-        .properties(BlockBehaviour.Properties::noOcclusion)
-        .tag(BlockTags.MINEABLE_WITH_PICKAXE, BlockTags.NEEDS_STONE_TOOL)
-        .simpleItem()
-        .register();
-
-    public static final BlockEntry<ECOCraftingVent> CRAFTING_VENT = REGISTRATE
-        .block("crafting_vent", ECOCraftingVent::new)
-        .initialProperties(() -> Blocks.IRON_BLOCK)
-        .tag(BlockTags.MINEABLE_WITH_PICKAXE, BlockTags.NEEDS_STONE_TOOL)
-        .simpleItem()
-        .blockstate((ctx, prov) -> {
-            ModelFile modelFile = prov.models()
-                .cube(
-                    ctx.getName(),
-                    prov.modLoc("block/crafting_casing"),
-                    prov.modLoc("block/crafting_casing"),
-                    prov.modLoc("block/crafting_vent_front"),
-                    prov.modLoc("block/crafting_vent_back"),
-                    prov.modLoc("block/crafting_casing"),
-                    prov.modLoc("block/crafting_casing")
-                ).texture("particle", prov.modLoc("block/crafting_vent_front"));
-
-            prov.getVariantBuilder(ctx.get())
-                .forAllStatesExcept(
-                    s ->
-                        ConfiguredModel.builder()
-                            .modelFile(modelFile)
-                            .rotationY(((int) s.getValue(BlockStateProperties.HORIZONTAL_FACING).toYRot() + 180) % 360)
-                            .build(),
-                    ECOCraftingVent.FORMED
-                );
-        })
-        .register();
+    public static final BlockEntry<ECOCraftingParallelCore> CRAFTING_PARALLEL_CORE_L4 = createParallelCore(
+        "l4",
+        Rarity.UNCOMMON
+    );
+    public static final BlockEntry<ECOCraftingParallelCore> CRAFTING_PARALLEL_CORE_L6 = createParallelCore(
+        "l6",
+        Rarity.RARE
+    );
+    public static final BlockEntry<ECOCraftingParallelCore> CRAFTING_PARALLEL_CORE_L9 = createParallelCore(
+        "l9",
+        Rarity.EPIC
+    );
 
     public static final BlockEntry<ECOCraftingWorker> CRAFTING_WORKER = REGISTRATE
         .block("crafting_worker", ECOCraftingWorker::new)
@@ -402,20 +389,100 @@ public class NEBlocks {
         .lang("ECO - FD Smart Pattern Bus")
         .register();
 
-    public static final BlockEntry<ECOCraftingParallelCore> CRAFTING_PARALLEL_CORE_L4 = createParallelCore(
-        "l4",
-        Rarity.UNCOMMON
-    );
-    public static final BlockEntry<ECOCraftingParallelCore> CRAFTING_PARALLEL_CORE_L6 = createParallelCore(
-        "l6",
-        Rarity.RARE
-    );
-    public static final BlockEntry<ECOCraftingParallelCore> CRAFTING_PARALLEL_CORE_L9 = createParallelCore(
-        "l9",
-        Rarity.EPIC
-    );
+    public static final BlockEntry<ECOFluidInputHatchBlock> INPUT_HATCH = REGISTRATE
+        .block("input_hatch", ECOFluidInputHatchBlock::new)
+        .initialProperties(() -> Blocks.IRON_BLOCK)
+        .tag(BlockTags.MINEABLE_WITH_PICKAXE, BlockTags.NEEDS_STONE_TOOL)
+        .blockstate((ctx, prov) -> {
+            ResourceLocation casing = prov.modLoc("block/crafting_casing");
+            ResourceLocation hatch = prov.modLoc("block/input_hatch");
+            ResourceLocation model = prov.models().cube(
+                ctx.getName(),
+                casing,
+                casing,
+                hatch,
+                casing,
+                casing,
+                casing
+            ).texture("particle", casing).getLocation();
+            prov.getVariantBuilder(ctx.get()).forAllStatesExcept(state -> {
+                Direction dir = state.getValue(ECOFluidInputHatchBlock.FACING);
+                return ConfiguredModel.builder()
+                    .modelFile(prov.models().getExistingFile(model))
+                    .rotationX(dir == Direction.DOWN ? 90 : dir.getAxis().isHorizontal() ? 0 : -90)
+                    .rotationY(dir.getAxis().isVertical() ? 0 : (((int) dir.toYRot()) + 180) % 360)
+                    .build();
+            }, ECOFluidInputHatchBlock.FORMED);
+        })
+        .simpleItem()
+        .lang("ECO Fluid Input Hatch")
+        .register();
 
+    public static final BlockEntry<ECOFluidOutputHatchBlock> OUTPUT_HATCH = REGISTRATE
+        .block("output_hatch", ECOFluidOutputHatchBlock::new)
+        .initialProperties(() -> Blocks.IRON_BLOCK)
+        .tag(BlockTags.MINEABLE_WITH_PICKAXE, BlockTags.NEEDS_STONE_TOOL)
+        .blockstate((ctx, prov) -> {
+            ResourceLocation casing = prov.modLoc("block/crafting_casing");
+            ResourceLocation hatch = prov.modLoc("block/output_hatch");
+            ResourceLocation model = prov.models().cube(
+                ctx.getName(),
+                casing,
+                casing,
+                hatch,
+                casing,
+                casing,
+                casing
+            ).texture("particle", casing).getLocation();
+            prov.getVariantBuilder(ctx.get()).forAllStatesExcept(state -> {
+                Direction dir = state.getValue(ECOFluidOutputHatchBlock.FACING);
+                return ConfiguredModel.builder()
+                    .modelFile(prov.models().getExistingFile(model))
+                    .rotationX(dir == Direction.DOWN ? 90 : dir.getAxis().isHorizontal() ? 0 : -90)
+                    .rotationY(dir.getAxis().isVertical() ? 0 : (((int) dir.toYRot()) + 180) % 360)
+                    .build();
+            }, ECOFluidOutputHatchBlock.FORMED);
+        })
+        .simpleItem()
+        .lang("ECO Fluid Output Hatch")
+        .register();
 
+    public static final BlockEntry<ECOCraftingVent> CRAFTING_VENT = REGISTRATE
+        .block("crafting_vent", ECOCraftingVent::new)
+        .initialProperties(() -> Blocks.IRON_BLOCK)
+        .tag(BlockTags.MINEABLE_WITH_PICKAXE, BlockTags.NEEDS_STONE_TOOL)
+        .simpleItem()
+        .blockstate((ctx, prov) -> {
+            ModelFile modelFile = prov.models()
+                .cube(
+                    ctx.getName(),
+                    prov.modLoc("block/crafting_casing"),
+                    prov.modLoc("block/crafting_casing"),
+                    prov.modLoc("block/crafting_vent_front"),
+                    prov.modLoc("block/crafting_vent_back"),
+                    prov.modLoc("block/crafting_casing"),
+                    prov.modLoc("block/crafting_casing")
+                ).texture("particle", prov.modLoc("block/crafting_vent_front"));
+
+            prov.getVariantBuilder(ctx.get())
+                .forAllStatesExcept(
+                    s ->
+                        ConfiguredModel.builder()
+                            .modelFile(modelFile)
+                            .rotationY(((int) s.getValue(BlockStateProperties.HORIZONTAL_FACING).toYRot() + 180) % 360)
+                            .build(),
+                    ECOCraftingVent.FORMED
+                );
+        })
+        .register();
+
+    public static final BlockEntry<MachineCasing<NECraftingCluster>> CRAFTING_CASING = REGISTRATE
+        .block("crafting_casing", MachineCasing<NECraftingCluster>::new)
+        .initialProperties(() -> Blocks.IRON_BLOCK)
+        .properties(BlockBehaviour.Properties::noOcclusion)
+        .tag(BlockTags.MINEABLE_WITH_PICKAXE, BlockTags.NEEDS_STONE_TOOL)
+        .simpleItem()
+        .register();
     //endregion
 
     private static BlockEntry<ECOStorageSystem> createStorageSystem(String level, Rarity rarity) {
@@ -487,11 +554,40 @@ public class NEBlocks {
                 ModelFile modelFile = prov.models()
                     .withExistingParent(ctx.getName(), prov.modLoc("block/crafting_system"))
                     .texture("1", "block/crafting_system_front_" + level);
-                ModelFile formedModel = new ModelFile.UncheckedModelFile(prov.modLoc("block/" + ctx.getName() + "_formed"));
+                ModelFile formedModel = prov.models().getExistingFile(prov.modLoc("block/" + ctx.getName() + "_formed"));
                 prov.getVariantBuilder(ctx.get())
                     .forAllStates(s ->
                         ConfiguredModel.builder()
                             .modelFile(s.getValue(ECOStorageSystem.FORMED) ? formedModel : modelFile)
+                            .rotationY(((int) s.getValue(BlockStateProperties.HORIZONTAL_FACING).toYRot() + 180) % 360)
+                            .build()
+                    );
+            })
+            .item()
+            .properties(p -> p.rarity(rarity))
+            .build()
+            .lang("ECO - %s Extensible Crafting Controller".formatted(
+                level.toUpperCase(Locale.ROOT)).replace("L", "F"
+            ))
+            .register();
+    }
+
+    private static BlockEntry<ECOComputationParallelCore> createComputationParallelCore(String level, Rarity rarity) {
+        return REGISTRATE
+            .block("computation_parallel_core_" + level, ECOComputationParallelCore::new)
+            .initialProperties(() -> Blocks.IRON_BLOCK)
+            .tag(BlockTags.MINEABLE_WITH_PICKAXE, BlockTags.NEEDS_STONE_TOOL)
+            .blockstate((ctx, prov) -> {
+                ModelFile modelFile = prov.models()
+                    .withExistingParent(ctx.getName(), prov.modLoc("block/computation_parallel_core"))
+                    .texture("1", "block/computation_parallel_core_front_" + level);
+                ModelFile modelFileFormed = prov.models()
+                    .withExistingParent(ctx.getName() + "_formed", prov.modLoc("block/computation_parallel_core"))
+                    .texture("1", "block/computation_parallel_core_front_anim_" + level);
+                prov.getVariantBuilder(ctx.get())
+                    .forAllStates(s ->
+                        ConfiguredModel.builder()
+                            .modelFile(s.getValue(ECOStorageSystem.FORMED) ? modelFileFormed : modelFile)
                             .rotationY(((int) s.getValue(BlockStateProperties.HORIZONTAL_FACING).toYRot() + 180) % 360)
                             .build()
                     );

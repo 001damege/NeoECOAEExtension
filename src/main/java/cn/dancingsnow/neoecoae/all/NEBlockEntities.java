@@ -4,12 +4,15 @@ import cn.dancingsnow.neoecoae.api.ECOTier;
 import cn.dancingsnow.neoecoae.api.IECOTier;
 import cn.dancingsnow.neoecoae.blocks.NEBlock;
 import cn.dancingsnow.neoecoae.blocks.crafting.ECOFluidInputHatchBlock;
+import cn.dancingsnow.neoecoae.blocks.entity.computation.ECOComputationParallelCoreBlockEntity;
+import cn.dancingsnow.neoecoae.blocks.entity.computation.ECOComputationTransmitterBlockEntity;
 import cn.dancingsnow.neoecoae.blocks.entity.crafting.ECOCraftingParallelCoreBlockEntity;
 import cn.dancingsnow.neoecoae.blocks.entity.crafting.ECOCraftingPatternBusBlockEntity;
 import cn.dancingsnow.neoecoae.blocks.entity.crafting.ECOCraftingSystemBlockEntity;
 import cn.dancingsnow.neoecoae.blocks.entity.crafting.ECOCraftingVentBlockEntity;
 import cn.dancingsnow.neoecoae.blocks.entity.crafting.ECOCraftingWorkerBlockEntity;
 import cn.dancingsnow.neoecoae.blocks.entity.crafting.ECOFluidInputHatchBlockEntity;
+import cn.dancingsnow.neoecoae.blocks.entity.crafting.ECOFluidOutputHatchBlockEntity;
 import cn.dancingsnow.neoecoae.blocks.entity.storage.ECODriveBlockEntity;
 import cn.dancingsnow.neoecoae.blocks.entity.storage.ECOStorageSystemBlockEntity;
 import cn.dancingsnow.neoecoae.blocks.entity.storage.ECOStorageVentBlockEntity;
@@ -218,6 +221,28 @@ public class NEBlockEntities {
         .blockEntityBlockLinked("input_hatch", ECOFluidInputHatchBlockEntity::new)
         .forBlock(NEBlocks.INPUT_HATCH)
         .validBlock(NEBlocks.INPUT_HATCH)
+        .serverTicker(ECOFluidInputHatchBlockEntity::tick)
+        .registerCapability(event -> {
+            event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                NEBlockEntities.INPUT_HATCH.get(),
+                (be, side) -> be.getBlockState().getValue(ECOFluidInputHatchBlock.FACING) == side ? be.tank : null
+            );
+        })
+        .register();
+
+    public static final NEBlockEntityEntry<ECOFluidOutputHatchBlockEntity> OUTPUT_HATCH = REGISTRATE
+        .blockEntityBlockLinked("output_hatch", ECOFluidOutputHatchBlockEntity::new)
+        .forBlock(NEBlocks.OUTPUT_HATCH)
+        .validBlock(NEBlocks.OUTPUT_HATCH)
+        .serverTicker(ECOFluidOutputHatchBlockEntity::tick)
+        .registerCapability(event -> {
+            event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                NEBlockEntities.OUTPUT_HATCH.get(),
+                (be, side) -> be.getBlockState().getValue(ECOFluidInputHatchBlock.FACING) == side ? be.tank : null
+            );
+        })
         .register();
 
     public static final NEBlockEntityEntry<ECOCraftingWorkerBlockEntity> CRAFTING_WORKER = REGISTRATE
@@ -239,10 +264,36 @@ public class NEBlockEntities {
         .registerCapability(e -> e.registerBlockEntity(
             Capabilities.ItemHandler.BLOCK,
             NEBlockEntities.CRAFTING_PATTERN_BUS.get(),
-            (be, side) -> be.getItemHandler()
-            )
-        )
+            (be, side) -> be.itemHandler
+        ))
         .register();
+
+    public static final NEBlockEntityEntry<ECOComputationTransmitterBlockEntity> COMPUTATION_TRANSMITTER = REGISTRATE
+        .blockEntityBlockLinked(
+            "computation_transmitter",
+            ECOComputationTransmitterBlockEntity::new
+        )
+        .forBlock(NEBlocks.COMPUTATION_TRANSMITTER)
+        .validBlock(NEBlocks.COMPUTATION_TRANSMITTER)
+        .register();
+
+    public static final NEBlockEntityEntry<ECOComputationParallelCoreBlockEntity> COMPUTATION_PARALLEL_CORE_L4 = createComputationParallelCore(
+        ECOTier.L4,
+        "l4",
+        NEBlocks.COMPUTATION_PARALLEL_CORE_L4
+    );
+
+    public static final NEBlockEntityEntry<ECOComputationParallelCoreBlockEntity> COMPUTATION_PARALLEL_CORE_L6 = createComputationParallelCore(
+        ECOTier.L6,
+        "l6",
+        NEBlocks.COMPUTATION_PARALLEL_CORE_L6
+    );
+
+    public static final NEBlockEntityEntry<ECOComputationParallelCoreBlockEntity> COMPUTATION_PARALLEL_CORE_L9 = createComputationParallelCore(
+        ECOTier.L9,
+        "l9",
+        NEBlocks.COMPUTATION_PARALLEL_CORE_L9
+    );
 
     private static NEBlockEntityEntry<ECOCraftingSystemBlockEntity> createCraftingSystem(
         IECOTier tier,
@@ -257,13 +308,6 @@ public class NEBlockEntities {
             )
             .forBlock(block)
             .validBlock(block)
-            .registerCapability(event -> {
-                event.registerBlockEntity(
-                    Capabilities.FluidHandler.BLOCK,
-                    NEBlockEntities.INPUT_HATCH.get(),
-                    (be, side) -> be.getBlockState().getValue(ECOFluidInputHatchBlock.FACING) == side ? be.tank : null
-                );
-            })
             .register();
     }
 
@@ -277,6 +321,22 @@ public class NEBlockEntities {
                 "crafting_parallel_core_" + tierString,
                 tier,
                 ECOCraftingParallelCoreBlockEntity::new
+            )
+            .forBlock(block)
+            .validBlock(block)
+            .register();
+    }
+
+    private static NEBlockEntityEntry<ECOComputationParallelCoreBlockEntity> createComputationParallelCore(
+        IECOTier tier,
+        String tierString,
+        BlockEntry<? extends NEBlock<ECOComputationParallelCoreBlockEntity>> block
+    ) {
+        return REGISTRATE
+            .tierBlockEntityBlockLinked(
+                "computation_parallel_core_" + tierString,
+                tier,
+                ECOComputationParallelCoreBlockEntity::new
             )
             .forBlock(block)
             .validBlock(block)
