@@ -1,8 +1,6 @@
 package cn.dancingsnow.neoecoae.multiblock.cluster;
 
-import appeng.api.crafting.IPatternDetails;
-import appeng.api.stacks.KeyCounter;
-import cn.dancingsnow.neoecoae.blocks.entity.MachineCasingBlockEntity;
+import cn.dancingsnow.neoecoae.blocks.entity.ECOMachineCasingBlockEntity;
 import cn.dancingsnow.neoecoae.blocks.entity.NEBlockEntity;
 import cn.dancingsnow.neoecoae.blocks.entity.crafting.ECOCraftingParallelCoreBlockEntity;
 import cn.dancingsnow.neoecoae.blocks.entity.crafting.ECOCraftingPatternBusBlockEntity;
@@ -36,23 +34,9 @@ public class NECraftingCluster extends NECluster<NECraftingCluster> {
         super(boundMin, boundMax);
     }
 
-    public boolean pushPattern(IPatternDetails patternDetails, KeyCounter[] inputHolder) {
-        if (controller != null) {
-            return controller.pushPattern(patternDetails, inputHolder);
-        }
-        return false;
-    }
-
-    public boolean isBusy() {
-        if (controller != null) {
-            return controller.isBusy();
-        }
-        return false;
-    }
-
     @Override
     public boolean shouldCasingHide(NEBlockEntity<NECraftingCluster, ?> blockEntity) {
-        if (blockEntity instanceof MachineCasingBlockEntity) {
+        if (blockEntity instanceof ECOMachineCasingBlockEntity) {
             Vec3 casingPos = blockEntity.getBlockPos().getCenter();
             Vec3 controllerPos = controller.getBlockPos().getCenter();
             return casingPos.distanceToSqr(controllerPos) <= 3;

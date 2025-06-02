@@ -15,15 +15,16 @@ import appeng.util.inv.AppEngInternalInventory;
 import appeng.util.inv.InternalInventoryHost;
 import appeng.util.inv.filter.IAEItemFilter;
 import cn.dancingsnow.neoecoae.all.NEBlocks;
+import cn.dancingsnow.neoecoae.gui.GuiTextures;
 import cn.dancingsnow.neoecoae.api.IECOPatternStorage;
 import cn.dancingsnow.neoecoae.gui.widget.AEPatternViewSlotWidget;
+import cn.dancingsnow.neoecoae.gui.widget.AEStylePlayerInventoryWidget;
+import cn.dancingsnow.neoecoae.gui.widget.AEStyleWidgetGroup;
 import com.lowdragmc.lowdraglib.gui.modular.IUIHolder;
 import com.lowdragmc.lowdraglib.gui.modular.ModularUI;
-import com.lowdragmc.lowdraglib.gui.texture.ResourceBorderTexture;
 import com.lowdragmc.lowdraglib.gui.texture.TextTexture;
 import com.lowdragmc.lowdraglib.gui.widget.TextTextureWidget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib.gui.widget.custom.PlayerInventoryWidget;
 import com.lowdragmc.lowdraglib.syncdata.IManaged;
 import com.lowdragmc.lowdraglib.syncdata.IManagedStorage;
 import com.lowdragmc.lowdraglib.syncdata.annotation.DescSynced;
@@ -71,18 +72,40 @@ public class ECOCraftingPatternBusBlockEntity extends AbstractCraftingBlockEntit
 
     @Override
     public boolean pushPattern(IPatternDetails patternDetails, KeyCounter[] inputHolder) {
+        if (!(patternDetails instanceof IMolecularAssemblerSupportedPattern supportedPattern)) {
+            return false;
+        }
         if (cluster != null) {
-            return this.cluster.pushPattern(patternDetails, inputHolder);
+            for (ECOCraftingWorkerBlockEntity worker : cluster.getWorkers()) {
+                if (worker.pushPattern(supportedPattern, inputHolder)) {
+                    return true;
+                }
+            }
         }
         return false;
     }
 
     @Override
     public boolean isBusy() {
-        if (cluster != null) {
-            return cluster.isBusy();
+        if (cluster != null && cluster.getController() != null) {
+            ECOCraftingSystemBlockEntity controller = cluster.getController();
+            if (controller.getThreadCount() > getRunningThread()) {
+                return false;
+            }
+            for (ECOCraftingWorkerBlockEntity worker : cluster.getWorkers()) {
+                if (!worker.isBusy()) {
+                    return true;
+                }
+            }
         }
-        return true;
+        return false;
+    }
+
+    private long getRunningThread() {
+        if (cluster != null) {
+            return cluster.getWorkers().stream().mapToLong(ECOCraftingWorkerBlockEntity::getRunningThreads).sum();
+        }
+        return 0;
     }
 
     @Override
@@ -132,7 +155,8 @@ public class ECOCraftingPatternBusBlockEntity extends AbstractCraftingBlockEntit
         this.inventory = new AppEngInternalInventory(this, ROW_SIZE * COL_SIZE);
         this.inventory.setFilter(new AEEncodedPatternFilter());
         this.itemHandler = (IItemHandlerModifiable) inventory.toItemHandler();
-        this.getMainNode().addService(ICraftingProvider.class, this);
+        this.getMainNode().addService(ICraftingProvider.class, this)
+            .addService(IECOPatternStorage.class, this);
     }
 
     @Override
@@ -196,14 +220,17 @@ public class ECOCraftingPatternBusBlockEntity extends AbstractCraftingBlockEntit
     private WidgetGroup createUI() {
         WidgetGroup root = new WidgetGroup();
         root.setSize(178, 238);
-        root.setBackground(ResourceBorderTexture.BORDERED_BACKGROUND);
+        root.setBackground(GuiTextures.BACKGROUND);
 
-        TextTextureWidget text = new TextTextureWidget(8, 8, 160, 9);
+        TextTextureWidget text = new TextTextureWidget(8, 6, 160, 9);
         text.setText(Component.translatable("block.neoecoae.crafting_pattern_bus"));
-        text.textureStyle(t -> t.setType(TextTexture.TextType.LEFT_ROLL));
+        text.textureStyle(t -> t.setType(TextTexture.TextType.LEFT_ROLL).setColor(0x403E53).setDropShadow(false));
         root.addWidget(text);
 
-        WidgetGroup items = new WidgetGroup();
+        AEStyleWidgetGroup items = new AEStyleWidgetGroup();
+        items.initTemplate();
+        items.setSize(18 * ROW_SIZE, 18 * COL_SIZE);
+        items.setSelfPosition(8, 20);
         for (int x = 0; x < COL_SIZE; x++) {
             for (int y = 0; y < ROW_SIZE; y++) {
                 AEPatternViewSlotWidget slot = aePatternViewSlotWidget(x, y);
@@ -211,7 +238,7 @@ public class ECOCraftingPatternBusBlockEntity extends AbstractCraftingBlockEntit
             }
         }
 
-        PlayerInventoryWidget playerInventoryWidget = new PlayerInventoryWidget();
+        AEStylePlayerInventoryWidget playerInventoryWidget = new AEStylePlayerInventoryWidget();
         playerInventoryWidget.setSelfPosition(3, 146);
         root.addWidget(playerInventoryWidget);
 
@@ -224,8 +251,8 @@ public class ECOCraftingPatternBusBlockEntity extends AbstractCraftingBlockEntit
         AEPatternViewSlotWidget slot = new AEPatternViewSlotWidget(
             itemHandler,
             index,
-            8 + y * 18,
-            20 + x * 18
+            y * 18,
+            x * 18
         );
         slot.initTemplate();
         slot.setItemHook(stack -> {
