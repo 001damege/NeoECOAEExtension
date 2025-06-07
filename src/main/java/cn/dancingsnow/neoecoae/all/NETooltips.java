@@ -2,6 +2,8 @@ package cn.dancingsnow.neoecoae.all;
 
 import cn.dancingsnow.neoecoae.api.ECOTier;
 import cn.dancingsnow.neoecoae.api.IECOTier;
+import cn.dancingsnow.neoecoae.blocks.computation.ECOComputationParallelCore;
+import cn.dancingsnow.neoecoae.blocks.computation.ECOComputationThreadingCore;
 import cn.dancingsnow.neoecoae.blocks.crafting.ECOCraftingParallelCore;
 import cn.dancingsnow.neoecoae.config.NEConfig;
 import net.minecraft.ChatFormatting;
@@ -28,6 +30,12 @@ public class NETooltips {
         NEBlocks.CRAFTING_SYSTEM_L4.asItem(),
         NEBlocks.CRAFTING_SYSTEM_L6.asItem(),
         NEBlocks.CRAFTING_SYSTEM_L9.asItem()
+    );
+
+    private static final Set<Item> COMPUTATION_SYSTEMS = Set.of(
+        NEBlocks.COMPUTATION_SYSTEM_L4.asItem(),
+        NEBlocks.COMPUTATION_SYSTEM_L6.asItem(),
+        NEBlocks.COMPUTATION_SYSTEM_L9.asItem()
     );
 
     private static List<Component> tooltip;
@@ -105,6 +113,39 @@ public class NETooltips {
                 Component.translatable("tooltip.neoecoae.crafting_pattern_bus.0"),
                 Component.translatable("tooltip.neoecoae.crafting_pattern_bus.1"),
                 Component.translatable("tooltip.neoecoae.crafting_pattern_bus.2")
+            );
+        }
+
+        if (COMPUTATION_SYSTEMS.contains(stack.getItem())) {
+            addTooltips(
+                Component.translatable("tooltip.neoecoae.computation_system"),
+                Component.translatable("tooltip.neoecoae.max_lenth", NEConfig.computationSystemMaxLength),
+                Component.translatable("tooltip.neoecoae.computation_system_desc.0"),
+                Component.translatable("tooltip.neoecoae.computation_system_desc.1"),
+                Component.translatable("tooltip.neoecoae.computation_system_desc.2"),
+                Component.translatable("tooltip.neoecoae.computation_system_desc.3"),
+                Component.translatable("tooltip.neoecoae.computation_system_desc.4")
+            );
+        }
+        if (stack.is(NEBlocks.COMPUTATION_DRIVE.asItem())) {
+            addTooltips(
+                Component.translatable("tooltip.neoecoae.computation_drive.0"),
+                Component.translatable("tooltip.neoecoae.computation_drive.1")
+            );
+        }
+        if (stack.getItem() instanceof BlockItem blockItem && blockItem.getBlock() instanceof ECOComputationThreadingCore threadingCore) {
+            addTooltips(
+                Component.translatable("tooltip.neoecoae.computation_threading_core.0"),
+                Component.translatable("tooltip.neoecoae.computation_threading_core.1"),
+                Component.translatable("tooltip.neoecoae.computation_threading_core.2"),
+                Component.translatable("tooltip.neoecoae.max_thread_count", threadingCore.getTier().getCPUThreads())
+            );
+        }
+        if (stack.getItem() instanceof BlockItem blockItem && blockItem.getBlock() instanceof ECOComputationParallelCore parallelCore) {
+            addTooltips(
+                Component.translatable("tooltip.neoecoae.computation_parallel_core.0"),
+                Component.translatable("tooltip.neoecoae.computation_parallel_core.1"),
+                Component.translatable("tooltip.neoecoae.max_parallel_count", parallelCore.getTier().getCPUAccelerators())
             );
         }
     }
