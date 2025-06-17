@@ -7,15 +7,14 @@ import cn.dancingsnow.neoecoae.blocks.computation.ECOComputationDrive;
 import cn.dancingsnow.neoecoae.blocks.entity.computation.ECOComputationDriveBlockEntity;
 import cn.dancingsnow.neoecoae.integration.ponder.PonderPlatformUtils;
 import cn.dancingsnow.neoecoae.items.ECOComputationCellItem;
+import com.lowdragmc.lowdraglib.utils.DummyWorld;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
-import net.createmod.ponder.api.level.PonderLevel;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.client.resources.model.BakedModel;
@@ -33,7 +32,6 @@ import java.util.Map;
 public class ECOComputationDriveRenderer
     implements IFixedBlockEntityRenderer<ECOComputationDriveBlockEntity>, BlockEntityRenderer<ECOComputationDriveBlockEntity> {
 
-    private final Map<Thread, RandomSource> randomSourceMap = new IdentityHashMap<>();
 
     public ECOComputationDriveRenderer() {
 
@@ -64,8 +62,7 @@ public class ECOComputationDriveRenderer
         boolean formed = blockEntity.isFormed();
         boolean shouldCellWork = false;
         IECOTier cableTier = blockEntity.getTier();
-        if (itemStack != null && !itemStack.isEmpty()) {
-            ECOComputationCellItem item = (ECOComputationCellItem) itemStack.getItem();
+        if (itemStack != null && !itemStack.isEmpty() && itemStack.getItem() instanceof ECOComputationCellItem item) {
             IECOTier itemTier = item.getTier();
             shouldCellWork = formed && itemTier.compareTo(blockEntity.getTier()) <= 0;
             ResourceLocation cellModel = shouldCellWork
@@ -128,77 +125,9 @@ public class ECOComputationDriveRenderer
         poseStack.popPose();
     }
 
-    private RandomSource getRandom() {
-        synchronized (randomSourceMap) {
-            Thread thread = Thread.currentThread();
-            if (randomSourceMap.containsKey(thread)) {
-                return randomSourceMap.get(thread);
-            }
-            RandomSource randomSource = RandomSource.create();
-            randomSourceMap.put(thread, randomSource);
-            return randomSource;
-        }
-    }
-
-    private void tesselateModel(
-        PoseStack poseStack,
-        MultiBufferSource bufferSource,
-        ResourceLocation model,
-        int packedLight,
-        int packedOverlay
-    ) {
-        Minecraft mc = Minecraft.getInstance();
-        BakedModel bakedModel = mc.getModelManager()
-            .getModel(ModelResourceLocation.standalone(model));
-        for (Direction value : Direction.values()) {
-            List<BakedQuad> quads = bakedModel.getQuads(
-                null,
-                value,
-                getRandom()
-            );
-            renderQuadsWithoutAO(
-                poseStack,
-                bufferSource.getBuffer(RenderType.cutout()),
-                quads,
-                packedLight,
-                packedOverlay
-            );
-        }
-        List<BakedQuad> quads = bakedModel.getQuads(
-            null,
-            null,
-            getRandom()
-        );
-        renderQuadsWithoutAO(
-            poseStack,
-            bufferSource.getBuffer(RenderType.cutout()),
-            quads,
-            packedLight,
-            packedOverlay
-        );
-    }
-
-    private void renderQuadsWithoutAO(
-        PoseStack poseStack,
-        VertexConsumer buffer,
-        List<BakedQuad> quads,
-        int packedLight,
-        int packedOverlay
-    ) {
-        for (BakedQuad quad : quads) {
-            buffer.putBulkData(
-                poseStack.last(),
-                quad,
-                1, 1, 1, 1,
-                packedLight,
-                packedOverlay
-            );
-        }
-    }
-
     @Override
     public void render(ECOComputationDriveBlockEntity driveBlockEntity, float v, PoseStack poseStack, MultiBufferSource multiBufferSource, int i, int i1) {
-        if (PonderPlatformUtils.isPonderLevel(driveBlockEntity.getLevel())) {
+        if (PonderPlatformUtils.isPonderLevel(driveBlockEntity.getLevel()) || driveBlockEntity.getLevel() instanceof DummyWorld) {
             renderFixed(driveBlockEntity, v, poseStack, multiBufferSource, i, i1);
         }
     }
